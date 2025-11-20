@@ -219,6 +219,22 @@ def get_neighbors_str(row, all_ids_set):
     return ",".join(valid)
 
 
+def detect_biological_conflicts(df):
+    print("[INFO] Detecting biological conflicts...")
+
+    STRICT_THRESHOLD = 6.0
+
+    df["conflict_martes_eliomys"] = (
+        (df["suitability_martes"] + df["suitability_eliomys"]) >= STRICT_THRESHOLD
+    ).astype(int)
+
+    df["conflict_martes_oryctolagus"] = (
+        (df["suitability_martes"] + df["suitability_oryctolagus"]) >= STRICT_THRESHOLD
+    ).astype(int)
+
+    return df
+
+
 def data_preparation(df):
     print("[INFO] Processing new variables...")
 
@@ -238,8 +254,6 @@ def data_preparation(df):
     species_cols = [c for c in df.columns if c.startswith("has_")]
     df["current_richness"] = df[species_cols].sum(axis=1).astype(int)
 
-    print("[INFO] Processing variables for each species...")
-
     species_config = [
         ("atelerix", atelerix_rules),
         ("martes", martes_rules),
@@ -258,6 +272,11 @@ def data_preparation(df):
         suit_col = f"suitability_{name}"
         if cost_col in df.columns:
             df[f"efficiency_{name}"] = df[suit_col] / (df[cost_col] + 0.01)
+
+    # 3.5 Biological Conflicts
+    df = detect_biological_conflicts(df)
+
+    print("[INFO] Processing variables for each species...")
 
     return df
 
